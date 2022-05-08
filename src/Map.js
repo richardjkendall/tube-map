@@ -93,6 +93,7 @@ const DrawBranch = (svg, start, direction, length, width, colour, debug = false)
   let startOfBranchLine = PointOnCircle(radius + width/2 +0.5, direction === "up" ? 45 : 135, {x: firstArcOrigin[0], y: firstArcOrigin[1]});
   debug && DrawSimpleLine(svg, {x: firstArcOrigin[0], y: firstArcOrigin[1]}, {x: startOfBranchLine[0], y: startOfBranchLine[1]}, 1, colour);
 
+
   let endOfBranchLine = PointOnCircle(length, direction === "up" ? 135 : 45, {x: startOfBranchLine[0], y: startOfBranchLine[1]});
   DrawSimpleLine(svg, {x: startOfBranchLine[0], y: startOfBranchLine[1]}, {x: endOfBranchLine[0], y: endOfBranchLine[1]}, width, colour)
 
@@ -135,7 +136,21 @@ const DrawBranch = (svg, start, direction, length, width, colour, debug = false)
 
 }
 
-const LINE_WIDTH = 5;
+const DrawStation = (svg, position, width) => {
+  let c = svg.append("circle")
+    .style("stroke", "black")
+    .style("stroke-width", width / 2)
+    .style("fill", "white")
+    .attr("r", width * 2)
+    .attr("cx", position.x + (width * 2))
+    .attr("cy", position.y);
+  c.raise();
+}
+
+const LINE_WIDTH = 6;
+const START_X = 40;
+const SEGMENT_LENGTH = 60;
+const BRANCH_HEIGHT = 50;
 
 const Map = ({ data, dimensions }) => {
   const svgRef = React.useRef(null);
@@ -156,15 +171,60 @@ const Map = ({ data, dimensions }) => {
     // draw grid to help
     DrawGrid(svg, 20, width, height);
 
-    // intial track
-    DrawSimpleLine(svg, {x: 40, y: 120}, {x: 100, y: 120}, LINE_WIDTH, "black");
-    let end = DrawBranch(svg, {x: 100, y: 120}, "up", 40, LINE_WIDTH, "black");
-    DrawSimpleLine(svg, {x: end[0], y: end[1]}, {x: end[0] + 60, y: end[1]}, LINE_WIDTH, "black");
+    // get start point
+    let startY = 0;
+    let numberOfBranches = Object.entries(data.branches).length;
+    console.log("Number of branches", numberOfBranches);
+    if(numberOfBranches % 2 === 1) {
+      // number of branches is odd so midpoint is 1/2
+      let mid = height / 2;
+      startY = mid - (((numberOfBranches - 1) / 2) * LINE_WIDTH);
+    } else {
+      let mid = (height / 2) - (LINE_WIDTH / 2);
+      startY = mid - ((numberOfBranches / 2) * LINE_WIDTH);
+    }
+    console.log("Start Y will be", startY);
 
-    // second track
-    DrawSimpleLine(svg, {x: 40, y: 125}, {x: 120, y: 125}, LINE_WIDTH, "red");
-    end = DrawBranch(svg, {x: 120, y: 125}, "down", 40, LINE_WIDTH, "red");
-    DrawSimpleLine(svg, {x: end[0], y: end[1]}, {x: end[0] + 60, y: end[1]}, LINE_WIDTH, "red");
+    Object.entries(data.branches).forEach(b => {
+      const branchName = b[0];
+      const branch = b[1];
+      const colour = branch.colour;
+      let startX = START_X;
+      const seq = branch.seq.split(",");
+      seq.forEach((s, i) => {
+        //console.log("branch", branchName, "seq", i, "instruction", s);
+        switch(s) {
+          case "-":
+            // draw straight line segment
+            DrawSimpleLine(svg, {x: startX, y: startY}, {x: startX + SEGMENT_LENGTH, y: startY}, LINE_WIDTH, colour);
+            startX += SEGMENT_LENGTH;
+            break;
+          case "/":
+            // draw 'up' branch
+            let upEnd = DrawBranch(svg, {x: startX, y: startY}, "up", BRANCH_HEIGHT, LINE_WIDTH, colour);
+            console.log("startx", startX, "endx", upEnd[0], "delta", upEnd[0] - startX);
+            startX = upEnd[0];
+            startY = upEnd[1];
+            break;
+          case "\\":
+            // draw 'down' branch
+            let downEnd = DrawBranch(svg, {x: startX, y: startY}, "down", BRANCH_HEIGHT, LINE_WIDTH, colour);
+            startX = downEnd[0];
+            startY = downEnd[1];
+            break;
+          case " ":
+            // no line, just move x along
+            startX += SEGMENT_LENGTH;
+            break;
+          default:
+            // this is a milestone
+            DrawSimpleLine(svg, {x: startX, y: startY}, {x: startX + SEGMENT_LENGTH, y: startY}, LINE_WIDTH, colour);
+            DrawStation(svg, {x: startX, y: startY}, LINE_WIDTH);
+            startX += SEGMENT_LENGTH;
+        }
+      })
+      startY += LINE_WIDTH;
+    })
 
   }, [data]); 
  
