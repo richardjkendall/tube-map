@@ -5,55 +5,80 @@ import Map from './Map';
 const data = {
   branches: {
     brancha: {
-      seq: "-,/,2,3,4,\\",
-      colour: "red"
+      name: "Lane A",
+      seq: "-,/,a,b,c,d,e,f,\\,-,-",
+      colour: "#f3a9bb"
     },
     branchb: {
-      seq: "1,-,-,-,-,-,7",
-      colour: "black"
+      name: "Lane B",
+      seq: "start,-,-,-,-,-,-,-,-,-,-,-,g,h,i,end,$",
+      colour: "#ffd300"
     },
     branchc: {
-      seq: "-,\\,5,6,-,/",
-      colour: "blue"
+      name: "Lane C",
+      seq: "-,\\,j,k,l,m,n,o,p,q,/",
+      colour: "#9b0056"
     }
   },
   milestones: {
-    1: {
-      id: 1,
+    start: {
+      name: "Start",
+      colour: "white"
+    },
+    a: {
       name: "Task A"
     },
-    2: {
-      id: 2,
+    b: {
       name: "Task B"
     },
-    3: {
-      id: 3,
-      name: "Task C",
+    c: {
+      name: "Task C"
     },
-    4: {
-      id: 4,
+    d: {
       name: "Task D"
     },
-    5: {
-      id: 5,
+    e: {
       name: "Task E"
     },
-    6: {
-      id: 6,
+    f: {
       name: "Task F"
     },
-    7: {
-      id: 7,
+    g: {
       name: "Task G"
     },
-    8: {
-      id: 8,
+    h: {
       name: "Task H"
     },
-    9: {
-      id: 9,
+    i: {
       name: "Task I"
-    }
+    },
+    end: {
+      name: "End"
+    },
+    j: {
+      name: "Task J"
+    },
+    k: {
+      name: "Task K"
+    },
+    l: {
+      name: "Task L"
+    },
+    m: {
+      name: "Task M"
+    },
+    n: {
+      name: "Task N"
+    },
+    o: {
+      name: "Task O"
+    },
+    p: {
+      name: "Task P"
+    },
+    q: {
+      name: "Task Q"
+    },
   }
 }
 
@@ -65,6 +90,7 @@ function App() {
           width: 1000, height: 400,
           margin: { top: 0, right: 30, bottom: 30, left: 0 }
         }}
+        debug={false}
         data={data}
       />
     </div>

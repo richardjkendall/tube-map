@@ -59,7 +59,7 @@ const DrawSimpleLine = (svg, from, to, width, colour) => {
     .attr("y2", to.y);
 }
 
-const DrawBranch = (svg, start, direction, length, width, colour, debug = false) => {
+const DrawBranch = (svg, start, direction, length, height, width, colour, debug = false) => {
   const radius = width * 3; // per TFL standard
 
   let firstArcOrigin = [
@@ -94,7 +94,17 @@ const DrawBranch = (svg, start, direction, length, width, colour, debug = false)
   debug && DrawSimpleLine(svg, {x: firstArcOrigin[0], y: firstArcOrigin[1]}, {x: startOfBranchLine[0], y: startOfBranchLine[1]}, 1, colour);
 
 
-  let endOfBranchLine = PointOnCircle(length, direction === "up" ? 135 : 45, {x: startOfBranchLine[0], y: startOfBranchLine[1]});
+  // find the length of the line based on a*a = b*b + c*c
+  // b = segment length
+  // c = branch height
+  let hyp = Math.sqrt(length*length + height*height);
+  console.log("hypotenuse = ", hyp);
+  let arcTriangleB = Math.max(start.x, startOfBranchLine[0]) - Math.min(start.x, startOfBranchLine[0]);
+  let arcTriangleC = Math.max(start.y, startOfBranchLine[1]) - Math.min(start.y, startOfBranchLine[1]);
+  let arcHyp = Math.sqrt(arcTriangleB*arcTriangleB, arcTriangleC*arcTriangleC);
+  console.log("arc hypotenuse = ", arcHyp);
+
+  let endOfBranchLine = PointOnCircle(hyp - (arcHyp * 2), direction === "up" ? 135 : 45, {x: startOfBranchLine[0], y: startOfBranchLine[1]});
   DrawSimpleLine(svg, {x: startOfBranchLine[0], y: startOfBranchLine[1]}, {x: endOfBranchLine[0], y: endOfBranchLine[1]}, width, colour)
 
   debug && svg.append("circle")
@@ -106,8 +116,8 @@ const DrawBranch = (svg, start, direction, length, width, colour, debug = false)
     .attr("cy", endOfBranchLine[1]);
   
   let secondArcOrigin = PointOnCircle(radius + width/2 + 0.5, direction === "up" ? 45 : 135, {x: endOfBranchLine[0], y: endOfBranchLine[1]});
-  debug && DrawSimpleLine(svg, {x: endOfBranchLine[0], y: endOfBranchLine[1]}, {x: secondArcOrigin[0], y: secondArcOrigin[1]}, 1, colour);
 
+  debug && DrawSimpleLine(svg, {x: endOfBranchLine[0], y: endOfBranchLine[1]}, {x: secondArcOrigin[0], y: secondArcOrigin[1]}, 1, colour);
   debug && svg.append("circle")
     .style("stroke", "grey")
     .style("stroke-width", 1)
@@ -133,26 +143,70 @@ const DrawBranch = (svg, start, direction, length, width, colour, debug = false)
   debug && DrawSimpleLine(svg, {x: secondArcOrigin[0], y: secondArcOrigin[1]}, {x: endOfSecondArc[0], y: endOfSecondArc[1]}, 1, colour);
 
   return endOfSecondArc;
-
 }
 
-const DrawStation = (svg, position, width) => {
-  let c = svg.append("circle")
+const DrawStation = (svg, position, text, width, textAnchor = "top", fill = null) => {
+  let radius = width * 2;
+
+  const tooltip = svg.select(".tooltip");
+
+  const mouseover = (event, d) => {
+    console.log("tooltip", tooltip);
+    tooltip.style("opacity", 1);
+    tooltip.raise();
+  };
+
+  const mouseleave = (event, d) => {
+    //tooltip.style('opacity', 0);
+  }
+
+  const mousemove = (event, d) => {
+    //const text = d3.select('.tooltip-area__text');
+    //text.text(`Sales were ${d.sales} in ${d.year}`);
+    const [x, y] = d3.pointer(event);
+    //console.log("x", x, "y", y);
+    tooltip.attr('transform', `translate(${x}, ${y})`);
+  };
+
+  svg.append("circle")
     .style("stroke", "black")
     .style("stroke-width", width / 2)
-    .style("fill", "white")
-    .attr("r", width * 2)
-    .attr("cx", position.x + (width * 2))
-    .attr("cy", position.y);
-  c.raise();
+    .style("fill", fill === null ? "white" : fill)
+    .attr("r", radius)
+    .attr("cx", position.x + radius)
+    .attr("cy", position.y)
+    //.on("mousemove", mousemove)
+    //.on("mouseleave", mouseleave)
+    //.on("mouseover", mouseover);
+  
+  let textAnchorX = position.x + radius + (width / 2);
+  let textAnchorY = position.y - radius - (width / 2);
+  if(textAnchor === "bottom") {
+    textAnchorY = position.y + width + (width / 2) + 12;
+  }
+
+  svg.append("text")
+    .attr("style", "font-size: 8pt")
+    .attr("text-anchor", textAnchor === "top" ? "start" : "end")
+    .attr("transform", `translate(${textAnchorX},${textAnchorY}) rotate(315)`)
+    .text(text)
+}
+
+const DrawBranchName = (svg, position, text, colour, rotate = "none") => {
+  svg.append("text")
+    .attr("style", "font-size: 8pt; font-weight: bold;")
+    .attr("fill", colour)
+    .attr("text-anchor", "start")
+    .attr("transform", `translate(${position.x},${position.y}) rotate(${rotate === "up" ? 315 : rotate === "down" ? 45 : 0})`)
+    .text(text)
 }
 
 const LINE_WIDTH = 6;
 const START_X = 40;
-const SEGMENT_LENGTH = 60;
-const BRANCH_HEIGHT = 50;
+const SEGMENT_LENGTH = 50;
+const BRANCH_HEIGHT = 80;
 
-const Map = ({ data, dimensions }) => {
+const Map = ({ data, dimensions, debug = false }) => {
   const svgRef = React.useRef(null);
 
   const { width, height, margin } = dimensions;
@@ -168,8 +222,22 @@ const Map = ({ data, dimensions }) => {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
     
+    // add the tooltip
+    /*
+    let tt = svg.append("g")
+      .attr("class", "tooltip");
+    tt.append("rect")
+      .attr("fill", "red")
+      .attr("height", 30)
+      .attr("width", 100);
+    tt.append("text")
+      .attr("class", "tooltip__text")
+      .attr("style", "font-size: 10pt; color: black;")
+      .text("testing");
+      */
+
     // draw grid to help
-    DrawGrid(svg, 20, width, height);
+    debug && DrawGrid(svg, 20, width, height);
 
     // get start point
     let startY = 0;
@@ -185,14 +253,17 @@ const Map = ({ data, dimensions }) => {
     }
     console.log("Start Y will be", startY);
 
+    let stations = [];
+    let lastStationX = 0;
+
     Object.entries(data.branches).forEach(b => {
-      const branchName = b[0];
       const branch = b[1];
       const colour = branch.colour;
       let startX = START_X;
       const seq = branch.seq.split(",");
+      let textDir = 0;
+      let firstBranch = true;
       seq.forEach((s, i) => {
-        //console.log("branch", branchName, "seq", i, "instruction", s);
         switch(s) {
           case "-":
             // draw straight line segment
@@ -201,29 +272,72 @@ const Map = ({ data, dimensions }) => {
             break;
           case "/":
             // draw 'up' branch
-            let upEnd = DrawBranch(svg, {x: startX, y: startY}, "up", BRANCH_HEIGHT, LINE_WIDTH, colour);
-            console.log("startx", startX, "endx", upEnd[0], "delta", upEnd[0] - startX);
+            let upEnd = DrawBranch(svg, {x: startX, y: startY}, "up", SEGMENT_LENGTH, BRANCH_HEIGHT, LINE_WIDTH, colour, debug);
+            // we need to label the branch, and this is a good place to do it
+            if(firstBranch && branch?.name) {
+              DrawBranchName(svg, {x: startX + LINE_WIDTH, y: startY - LINE_WIDTH}, branch.name, colour, "up");
+              firstBranch = false;
+            }
             startX = upEnd[0];
             startY = upEnd[1];
+            textDir += 1;
             break;
           case "\\":
             // draw 'down' branch
-            let downEnd = DrawBranch(svg, {x: startX, y: startY}, "down", BRANCH_HEIGHT, LINE_WIDTH, colour);
+            let downEnd = DrawBranch(svg, {x: startX, y: startY}, "down", SEGMENT_LENGTH, BRANCH_HEIGHT, LINE_WIDTH, colour, debug);
+            // we need to label the branch, and this is a good place to do it
+            if(firstBranch && branch?.name) {
+              DrawBranchName(svg, {x: startX, y: startY + LINE_WIDTH*2}, branch.name, colour, "down");
+              firstBranch = false;
+            }
             startX = downEnd[0];
             startY = downEnd[1];
+            textDir -= 1;
             break;
           case " ":
             // no line, just move x along
             startX += SEGMENT_LENGTH;
             break;
+          case "$":
+            // don't do anything, this symbol indicates the end of the flow
+            break;
           default:
             // this is a milestone
-            DrawSimpleLine(svg, {x: startX, y: startY}, {x: startX + SEGMENT_LENGTH, y: startY}, LINE_WIDTH, colour);
-            DrawStation(svg, {x: startX, y: startY}, LINE_WIDTH);
+            // check if it is the terminal milestone (next seq value should be $)
+            let noLine = false;
+            if(i + 1 < seq.length) {
+              if(seq[i+1] === "$") {
+                noLine = true;
+              }
+            }
+            !noLine && DrawSimpleLine(svg, {x: startX, y: startY}, {x: startX + SEGMENT_LENGTH, y: startY}, LINE_WIDTH, colour);
+            // get milestone
+            let m = data.milestones[s];
+            console.log("got milestone", m, "text dir", textDir);
+            stations.push({
+              pos: {x: startX, y: startY},
+              name: m.name,
+              dir: textDir < 0 ? "bottom" : "top",
+              colour: m?.colour
+            });
             startX += SEGMENT_LENGTH;
         }
       })
+      // if we get here and the firstbranch is still true then we've not labelled the track
+      if(branch?.name && firstBranch) {
+        // not sure how to do this yet, so just do a hack job
+        DrawBranchName(svg, {x: SEGMENT_LENGTH*2.5, y: startY - (LINE_WIDTH + 1)}, branch.name, colour);
+      }
       startY += LINE_WIDTH;
+    })
+
+    lastStationX = stations.reduce((p, s) => {
+      return Math.min(p, s.pos.x);
+    }, stations[0].pos.x);
+
+    stations.forEach(s => {
+      let offset = s.pos.x === lastStationX ? 10 : 0;
+      DrawStation(svg, {x: s.pos.x - offset, y: s.pos.y}, s.name, LINE_WIDTH, s.dir, s.colour);
     })
 
   }, [data]); 
