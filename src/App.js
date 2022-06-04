@@ -1,5 +1,3 @@
-import './App.css';
-
 import Map from './Map';
 
 const data = {
@@ -84,7 +82,7 @@ const data = {
 
 function App() {
   return (
-    <div className="App">
+    <div>
       <Map
         dimensions={{
           width: 1000, height: 400,

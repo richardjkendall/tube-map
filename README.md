@@ -8,7 +8,14 @@ I attempted to follow as much of the TFL line diagram standards as possible: htt
 
 ![Example process](images/example_map.png)
 
-This example is included in the code.
+This example is included in the code.  You can see it straight away by pulling down the repo and then running
+
+```sh
+npm ci
+npm start
+```
+
+It should open in your browser, and if not, visit http://localhost:3000
 
 ## How to use
 
