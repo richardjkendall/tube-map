@@ -99,6 +99,13 @@ return (
 )
 ```
 
+Setting `debug` to true is useful if you want to see how the drawing is done or work out the source of problems.  It will draw some helpers and a grid.
+
+## Still to-do
+
+* Support for clicking milestones
+* Support for 'tool-tip' style mouse overs on milestones
+
 ## Acknowledgements 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
