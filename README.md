@@ -16,7 +16,7 @@ The tool is designed to draw diagrams from left to right only, and it expects a 
 
 The tool expects a data structure containing two items, the `branches` of the process and the `milestones`.  Each should be an object. 
 
-```{javascript}
+```javascript
 const data = {
   branches: {},
   milestones: {}
@@ -27,7 +27,7 @@ const data = {
 
 The branches object should contain one or more objects, each of which defines a a process branch.  For example
 
-```{javascript}
+```javascript
 const data = {
   branches: {
     brancha: {},
@@ -38,7 +38,7 @@ const data = {
 
 Each branch should be defined as follows:
 
-```{javascript}
+```javascript
 {
   name: "Name of the branch",
   seq: "",
@@ -66,7 +66,7 @@ Each branch should be defined as follows:
 
 Each of the milestones referenced in the sequences should be defined in the `milestones` object.  Each milestone should have a name and optionally a colour as follows:
 
-```{javascript}
+```javascript
 const data = {
   branches: {},
   milestones: {
@@ -83,7 +83,7 @@ The `colour` attribute is optional and if not present the default colour is whit
 ## Including it in your app
 After defining your data object, including the tube-map is quite easy:
 
-```{javascript}
+```javascript
 import Map from './Map';
 
 // in your render method:

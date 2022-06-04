@@ -23,7 +23,7 @@ const data = {
   milestones: {
     start: {
       name: "Start",
-      colour: "red"
+      colour: "white"
     },
     a: {
       name: "Task A"
